@@ -1655,7 +1655,7 @@ public class GridLabelRenderer {
                 labelsOffset += labelsWidth / 2;
             }
 
-            labelsOffset -= labelsOffset;
+            labelsOffset -= mGraphView.mThirdScale.labelOffset;
 
             float y = posY;
 
@@ -1690,7 +1690,7 @@ public class GridLabelRenderer {
                 labelsOffset += labelsWidth / 2;
             }
 
-            labelsOffset += labelsWidth + labelsWidth / 2;
+            labelsOffset += mGraphView.mFourthScale.labelOffset;
 
             float y = posY;
 

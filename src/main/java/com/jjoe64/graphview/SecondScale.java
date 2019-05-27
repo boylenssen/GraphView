@@ -18,7 +18,6 @@ package com.jjoe64.graphview;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
-
 import com.jjoe64.graphview.series.Series;
 
 import java.util.ArrayList;
@@ -40,6 +39,8 @@ public class SecondScale {
      * reference to the graph
      */
     protected final GraphView mGraph;
+
+    public int labelOffset = 0;
 
     /**
      * array of series for the second
