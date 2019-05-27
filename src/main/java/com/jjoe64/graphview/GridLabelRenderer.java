@@ -74,6 +74,8 @@ public class GridLabelRenderer {
          * the alignment of the labels on the right side
          */
         public Paint.Align verticalLabelsSecondScaleAlign;
+        public Paint.Align verticalLabelsThirdScaleAlign;
+        public Paint.Align verticalLabelsFourthScaleAlign;
 
         /**
          * the color of the vertical labels
@@ -84,6 +86,8 @@ public class GridLabelRenderer {
          * the color of the labels on the right side
          */
         public int verticalLabelsSecondScaleColor;
+        public int verticalLabelsThirdScaleColor;
+        public int verticalLabelsFourthScaleColor;
 
         /**
          * the color of the horizontal labels
@@ -216,6 +220,8 @@ public class GridLabelRenderer {
      * Value    = y-value
      */
     private Map<Integer, Double> mStepsVerticalSecondScale;
+    private Map<Integer, Double> mStepsVerticalThirdScale;
+    private Map<Integer, Double> mStepsVerticalFourthScale;
 
     /**
      * cache of the horizontal steps
@@ -270,12 +276,16 @@ public class GridLabelRenderer {
      * of the second scale
      */
     private Integer mLabelVerticalSecondScaleWidth;
+    private Integer mLabelVerticalThirdScaleWidth;
+    private Integer mLabelVerticalFourthScaleWidth;
 
     /**
      * the height of the vertical labels
      * of the second scale
      */
     private Integer mLabelVerticalSecondScaleHeight;
+    private Integer mLabelVerticalThirdScaleHeight;
+    private Integer mLabelVerticalFourthScaleHeight;
 
     /**
      * the width of the horizontal labels
@@ -401,6 +411,8 @@ public class GridLabelRenderer {
 
         mStyles.verticalLabelsAlign = Paint.Align.RIGHT;
         mStyles.verticalLabelsSecondScaleAlign = Paint.Align.LEFT;
+        mStyles.verticalLabelsThirdScaleAlign = Paint.Align.RIGHT;
+        mStyles.verticalLabelsFourthScaleAlign = Paint.Align.LEFT;
         mStyles.highlightZeroLines = true;
 
         mStyles.verticalAxisTitleColor = mStyles.verticalLabelsColor;
@@ -552,6 +564,10 @@ public class GridLabelRenderer {
             mLabelVerticalHeight = null;
             mLabelVerticalSecondScaleWidth = null;
             mLabelVerticalSecondScaleHeight = null;
+            mLabelVerticalThirdScaleWidth = null;
+            mLabelVerticalThirdScaleHeight = null;
+            mLabelVerticalFourthScaleWidth = null;
+            mLabelVerticalFourthScaleHeight = null;
         }
         //reloadStyles();
     }
@@ -687,6 +703,260 @@ public class GridLabelRenderer {
 
             double pixelPos = relativeToCurrentViewport * pixelPerData;
             mStepsVerticalSecondScale.put((int) pixelPos, dataPointPos);
+        }
+
+        return true;
+    }
+
+    protected boolean adjustVerticalThirdScale() {
+        if (mLabelHorizontalHeight == null) {
+            return false;
+        }
+        if (mGraphView.mThirdScale == null) {
+            return true;
+        }
+
+        double minY = mGraphView.mThirdScale.getMinY(false);
+        double maxY = mGraphView.mThirdScale.getMaxY(false);
+
+        // TODO find the number of labels
+        int numVerticalLabels = mNumVerticalLabels;
+
+        double newMinY;
+        double exactSteps;
+
+        if (mGraphView.mThirdScale.isYAxisBoundsManual()) {
+            // split range into equal steps
+            exactSteps = (maxY - minY) / (numVerticalLabels - 1);
+
+            // round because of floating error
+            exactSteps = Math.round(exactSteps * 1000000d) / 1000000d;
+        } else {
+            // TODO auto adjusting
+            throw new IllegalStateException("Not yet implemented");
+        }
+
+        if (mStepsVerticalThirdScale != null && mStepsVerticalThirdScale.size() > 1) {
+            // else choose other nice steps that previous
+            // steps are included (divide to have more, or multiplicate to have less)
+
+            double d1 = 0, d2 = 0;
+            int i = 0;
+            for (Double v : mStepsVerticalThirdScale.values()) {
+                if (i == 0) {
+                    d1 = v;
+                } else {
+                    d2 = v;
+                    break;
+                }
+                i++;
+            }
+            double oldSteps = d2 - d1;
+            if (oldSteps > 0) {
+                double newSteps = Double.NaN;
+
+                if (oldSteps > exactSteps) {
+                    newSteps = oldSteps / 2;
+                } else if (oldSteps < exactSteps) {
+                    newSteps = oldSteps * 2;
+                }
+
+                // only if there wont be more than numLabels
+                // and newSteps will be better than oldSteps
+                int numStepsOld = (int) ((maxY - minY) / oldSteps);
+                int numStepsNew = (int) ((maxY - minY) / newSteps);
+
+                boolean shouldChange;
+
+                // avoid switching between 2 steps
+                if (numStepsOld <= numVerticalLabels && numStepsNew <= numVerticalLabels) {
+                    // both are possible
+                    // only the new if it hows more labels
+                    shouldChange = numStepsNew > numStepsOld;
+                } else {
+                    shouldChange = true;
+                }
+
+                if (newSteps != Double.NaN && shouldChange && numStepsNew <= numVerticalLabels) {
+                    exactSteps = newSteps;
+                } else {
+                    // try to stay to the old steps
+                    exactSteps = oldSteps;
+                }
+            }
+        } else {
+            // first time
+        }
+
+        // find the first data point that is relevant to display
+        // starting from 1st datapoint so that the steps have nice numbers
+        // goal is to start with the minY or 1 step before
+        newMinY = mGraphView.getThirdScale().mReferenceY;
+        // must be down-rounded
+        double count = Math.floor((minY-newMinY)/exactSteps);
+        newMinY = count*exactSteps + newMinY;
+
+        // it can happen that we need to add some more labels to fill the complete screen
+        numVerticalLabels = (int) ((mGraphView.getThirdScale().mCurrentViewport.height()*-1 / exactSteps)) + 2;
+
+        // ensure that the value is valid (minimum 2)
+        // see https://github.com/appsthatmatter/GraphView/issues/520
+        numVerticalLabels = Math.max(numVerticalLabels, 2);
+
+        if (mStepsVerticalThirdScale != null) {
+            mStepsVerticalThirdScale.clear();
+        } else {
+            mStepsVerticalThirdScale = new LinkedHashMap<>(numVerticalLabels);
+        }
+
+        int height = mGraphView.getGraphContentHeight();
+        // convert data-y to pixel-y in current viewport
+        double pixelPerData = height / mGraphView.getThirdScale().mCurrentViewport.height()*-1;
+
+        for (int i = 0; i < numVerticalLabels; i++) {
+            // dont draw if it is top of visible screen
+            if (newMinY + (i * exactSteps) > mGraphView.getThirdScale().mCurrentViewport.top) {
+                continue;
+            }
+            // dont draw if it is below of visible screen
+            if (newMinY + (i * exactSteps) < mGraphView.getThirdScale().mCurrentViewport.bottom) {
+                continue;
+            }
+
+
+            // where is the data point on the current screen
+            double dataPointPos = newMinY + (i * exactSteps);
+            double relativeToCurrentViewport = dataPointPos - mGraphView.getThirdScale().mCurrentViewport.bottom;
+
+            double pixelPos = relativeToCurrentViewport * pixelPerData;
+            mStepsVerticalThirdScale.put((int) pixelPos, dataPointPos);
+        }
+
+        return true;
+    }
+
+    protected boolean adjustVerticalFourthScale() {
+        if (mLabelHorizontalHeight == null) {
+            return false;
+        }
+        if (mGraphView.mFourthScale == null) {
+            return true;
+        }
+
+        double minY = mGraphView.mFourthScale.getMinY(false);
+        double maxY = mGraphView.mFourthScale.getMaxY(false);
+
+        // TODO find the number of labels
+        int numVerticalLabels = mNumVerticalLabels;
+
+        double newMinY;
+        double exactSteps;
+
+        if (mGraphView.mFourthScale.isYAxisBoundsManual()) {
+            // split range into equal steps
+            exactSteps = (maxY - minY) / (numVerticalLabels - 1);
+
+            // round because of floating error
+            exactSteps = Math.round(exactSteps * 1000000d) / 1000000d;
+        } else {
+            // TODO auto adjusting
+            throw new IllegalStateException("Not yet implemented");
+        }
+
+        if (mStepsVerticalFourthScale != null && mStepsVerticalFourthScale.size() > 1) {
+            // else choose other nice steps that previous
+            // steps are included (divide to have more, or multiplicate to have less)
+
+            double d1 = 0, d2 = 0;
+            int i = 0;
+            for (Double v : mStepsVerticalFourthScale.values()) {
+                if (i == 0) {
+                    d1 = v;
+                } else {
+                    d2 = v;
+                    break;
+                }
+                i++;
+            }
+            double oldSteps = d2 - d1;
+            if (oldSteps > 0) {
+                double newSteps = Double.NaN;
+
+                if (oldSteps > exactSteps) {
+                    newSteps = oldSteps / 2;
+                } else if (oldSteps < exactSteps) {
+                    newSteps = oldSteps * 2;
+                }
+
+                // only if there wont be more than numLabels
+                // and newSteps will be better than oldSteps
+                int numStepsOld = (int) ((maxY - minY) / oldSteps);
+                int numStepsNew = (int) ((maxY - minY) / newSteps);
+
+                boolean shouldChange;
+
+                // avoid switching between 2 steps
+                if (numStepsOld <= numVerticalLabels && numStepsNew <= numVerticalLabels) {
+                    // both are possible
+                    // only the new if it hows more labels
+                    shouldChange = numStepsNew > numStepsOld;
+                } else {
+                    shouldChange = true;
+                }
+
+                if (newSteps != Double.NaN && shouldChange && numStepsNew <= numVerticalLabels) {
+                    exactSteps = newSteps;
+                } else {
+                    // try to stay to the old steps
+                    exactSteps = oldSteps;
+                }
+            }
+        } else {
+            // first time
+        }
+
+        // find the first data point that is relevant to display
+        // starting from 1st datapoint so that the steps have nice numbers
+        // goal is to start with the minY or 1 step before
+        newMinY = mGraphView.getFourthScale().mReferenceY;
+        // must be down-rounded
+        double count = Math.floor((minY-newMinY)/exactSteps);
+        newMinY = count*exactSteps + newMinY;
+
+        // it can happen that we need to add some more labels to fill the complete screen
+        numVerticalLabels = (int) ((mGraphView.getFourthScale().mCurrentViewport.height()*-1 / exactSteps)) + 2;
+
+        // ensure that the value is valid (minimum 2)
+        // see https://github.com/appsthatmatter/GraphView/issues/520
+        numVerticalLabels = Math.max(numVerticalLabels, 2);
+
+        if (mStepsVerticalFourthScale != null) {
+            mStepsVerticalFourthScale.clear();
+        } else {
+            mStepsVerticalFourthScale = new LinkedHashMap<>(numVerticalLabels);
+        }
+
+        int height = mGraphView.getGraphContentHeight();
+        // convert data-y to pixel-y in current viewport
+        double pixelPerData = height / mGraphView.getFourthScale().mCurrentViewport.height()*-1;
+
+        for (int i = 0; i < numVerticalLabels; i++) {
+            // dont draw if it is top of visible screen
+            if (newMinY + (i * exactSteps) > mGraphView.getFourthScale().mCurrentViewport.top) {
+                continue;
+            }
+            // dont draw if it is below of visible screen
+            if (newMinY + (i * exactSteps) < mGraphView.getFourthScale().mCurrentViewport.bottom) {
+                continue;
+            }
+
+
+            // where is the data point on the current screen
+            double dataPointPos = newMinY + (i * exactSteps);
+            double relativeToCurrentViewport = dataPointPos - mGraphView.getFourthScale().mCurrentViewport.bottom;
+
+            double pixelPos = relativeToCurrentViewport * pixelPerData;
+            mStepsVerticalFourthScale.put((int) pixelPos, dataPointPos);
         }
 
         return true;
@@ -977,6 +1247,8 @@ public class GridLabelRenderer {
     protected void adjustSteps() {
         mIsAdjusted = adjustVertical(! Viewport.AxisBoundsStatus.FIX.equals(mGraphView.getViewport().mYAxisBoundsStatus));
         mIsAdjusted &= adjustVerticalSecondScale();
+        mIsAdjusted &= adjustVerticalThirdScale();
+        mIsAdjusted &= adjustVerticalFourthScale();
         mIsAdjusted &= adjustHorizontal(! Viewport.AxisBoundsStatus.FIX.equals(mGraphView.getViewport().mXAxisBoundsStatus));
     }
 
@@ -1042,6 +1314,52 @@ public class GridLabelRenderer {
         mLabelVerticalSecondScaleHeight *= lines;
     }
 
+    protected void calcLabelVerticalThirdScaleSize(Canvas canvas) {
+        if (mGraphView.mThirdScale == null) {
+            mLabelVerticalThirdScaleWidth = 0;
+            mLabelVerticalThirdScaleHeight = 0;
+            return;
+        }
+
+        // test label
+        double testY = ((mGraphView.mThirdScale.getMaxY(false) - mGraphView.mThirdScale.getMinY(false)) * 0.783) + mGraphView.mThirdScale.getMinY(false);
+        String testLabel = mGraphView.mThirdScale.getLabelFormatter().formatLabel(testY, false);
+        Rect textBounds = new Rect();
+        mPaintLabel.getTextBounds(testLabel, 0, testLabel.length(), textBounds);
+        mLabelVerticalThirdScaleWidth = textBounds.width();
+        mLabelVerticalThirdScaleHeight = textBounds.height();
+
+        // multiline
+        int lines = 1;
+        for (byte c : testLabel.getBytes()) {
+            if (c == '\n') lines++;
+        }
+        mLabelVerticalThirdScaleHeight *= lines;
+    }
+
+    protected void calcLabelVerticalFourthScaleSize(Canvas canvas) {
+        if (mGraphView.mFourthScale == null) {
+            mLabelVerticalFourthScaleWidth = 0;
+            mLabelVerticalFourthScaleHeight = 0;
+            return;
+        }
+
+        // test label
+        double testY = ((mGraphView.mFourthScale.getMaxY(false) - mGraphView.mFourthScale.getMinY(false)) * 0.783) + mGraphView.mFourthScale.getMinY(false);
+        String testLabel = mGraphView.mFourthScale.getLabelFormatter().formatLabel(testY, false);
+        Rect textBounds = new Rect();
+        mPaintLabel.getTextBounds(testLabel, 0, testLabel.length(), textBounds);
+        mLabelVerticalFourthScaleWidth = textBounds.width();
+        mLabelVerticalFourthScaleHeight = textBounds.height();
+
+        // multiline
+        int lines = 1;
+        for (byte c : testLabel.getBytes()) {
+            if (c == '\n') lines++;
+        }
+        mLabelVerticalFourthScaleHeight *= lines;
+    }
+
     /**
      * calculates the horizontal label size
      * @param canvas canvas
@@ -1103,6 +1421,14 @@ public class GridLabelRenderer {
             calcLabelVerticalSecondScaleSize(canvas);
             labelSizeChanged = true;
         }
+        if (mLabelVerticalThirdScaleWidth == null) {
+            calcLabelVerticalThirdScaleSize(canvas);
+            labelSizeChanged = true;
+        }
+        if (mLabelVerticalFourthScaleWidth == null) {
+            calcLabelVerticalFourthScaleSize(canvas);
+            labelSizeChanged = true;
+        }
         if (labelSizeChanged) {
             // redraw directly
             mGraphView.drawGraphElements(canvas);
@@ -1116,6 +1442,8 @@ public class GridLabelRenderer {
         if (mIsAdjusted) {
             drawVerticalSteps(canvas);
             drawVerticalStepsSecondScale(canvas);
+            drawVerticalStepsThirdScale(canvas);
+            drawVerticalStepsFourthScale(canvas);
             drawHorizontalSteps(canvas);
         } else {
             // we can not draw anything
@@ -1297,6 +1625,76 @@ public class GridLabelRenderer {
             float y = posY;
 
             String[] lines = mGraphView.mSecondScale.mLabelFormatter.formatLabel(e.getValue(), false).split("\n");
+            y += (lines.length * getTextSize() * 1.1f) / 2; // center text vertically
+            for (int li = 0; li < lines.length; li++) {
+                // for the last line y = height
+                float y2 = y - (lines.length - li - 1) * getTextSize() * 1.1f;
+                canvas.drawText(lines[li], labelsOffset, y2, mPaintLabel);
+            }
+        }
+    }
+
+    protected void drawVerticalStepsThirdScale(Canvas canvas) {
+        if (mGraphView.mThirdScale == null) {
+            return;
+        }
+
+        // draw only the vertical labels on the right
+        float startLeft = 0;
+        mPaintLabel.setColor(getVerticalLabelsThirdScaleColor());
+        mPaintLabel.setTextAlign(getVerticalLabelsThirdScaleAlign());
+        for (Map.Entry<Integer, Double> e : mStepsVerticalThirdScale.entrySet()) {
+            float posY = mGraphView.getGraphContentTop()+mGraphView.getGraphContentHeight()-e.getKey();
+
+            // draw label
+            int labelsWidth = mLabelVerticalThirdScaleWidth;
+            int labelsOffset = (int) startLeft;
+            if (getVerticalLabelsThirdScaleAlign() == Paint.Align.RIGHT) {
+                labelsOffset += labelsWidth;
+            } else if (getVerticalLabelsThirdScaleAlign() == Paint.Align.CENTER) {
+                labelsOffset += labelsWidth / 2;
+            }
+
+            labelsOffset -= labelsOffset;
+
+            float y = posY;
+
+            String[] lines = mGraphView.mThirdScale.mLabelFormatter.formatLabel(e.getValue(), false).split("\n");
+            y += (lines.length * getTextSize() * 1.1f) / 2; // center text vertically
+            for (int li = 0; li < lines.length; li++) {
+                // for the last line y = height
+                float y2 = y - (lines.length - li - 1) * getTextSize() * 1.1f;
+                canvas.drawText(lines[li], labelsOffset, y2, mPaintLabel);
+            }
+        }
+    }
+
+    protected void drawVerticalStepsFourthScale(Canvas canvas) {
+        if (mGraphView.mFourthScale == null) {
+            return;
+        }
+
+        // draw only the vertical labels on the right
+        float startLeft = mGraphView.getGraphContentLeft() + mGraphView.getGraphContentWidth();
+        mPaintLabel.setColor(getVerticalLabelsFourthScaleColor());
+        mPaintLabel.setTextAlign(getVerticalLabelsFourthScaleAlign());
+        for (Map.Entry<Integer, Double> e : mStepsVerticalFourthScale.entrySet()) {
+            float posY = mGraphView.getGraphContentTop()+mGraphView.getGraphContentHeight()-e.getKey();
+
+            // draw label
+            int labelsWidth = mLabelVerticalFourthScaleWidth;
+            int labelsOffset = (int) startLeft;
+            if (getVerticalLabelsFourthScaleAlign() == Paint.Align.RIGHT) {
+                labelsOffset += labelsWidth;
+            } else if (getVerticalLabelsFourthScaleAlign() == Paint.Align.CENTER) {
+                labelsOffset += labelsWidth / 2;
+            }
+
+            labelsOffset += labelsWidth + labelsWidth / 2;
+
+            float y = posY;
+
+            String[] lines = mGraphView.mFourthScale.mLabelFormatter.formatLabel(e.getValue(), false).split("\n");
             y += (lines.length * getTextSize() * 1.1f) / 2; // center text vertically
             for (int li = 0; li < lines.length; li++) {
                 // for the last line y = height
@@ -1676,6 +2074,22 @@ public class GridLabelRenderer {
         mStyles.verticalLabelsSecondScaleAlign = verticalLabelsSecondScaleAlign;
     }
 
+    public Paint.Align getVerticalLabelsThirdScaleAlign() {
+        return mStyles.verticalLabelsThirdScaleAlign;
+    }
+
+    public void setVerticalLabelsThirdScaleAlign(Paint.Align verticalLabelsThirdScaleAlign) {
+        mStyles.verticalLabelsThirdScaleAlign = verticalLabelsThirdScaleAlign;
+    }
+
+    public Paint.Align getVerticalLabelsFourthScaleAlign() {
+        return mStyles.verticalLabelsFourthScaleAlign;
+    }
+
+    public void setVerticalLabelsFourthScaleAlign(Paint.Align verticalLabelsFourthScaleAlign) {
+        mStyles.verticalLabelsFourthScaleAlign = verticalLabelsFourthScaleAlign;
+    }
+
     /**
      * @return the color of the labels on the right side
      */
@@ -1690,12 +2104,36 @@ public class GridLabelRenderer {
         mStyles.verticalLabelsSecondScaleColor = verticalLabelsSecondScaleColor;
     }
 
+    public int getVerticalLabelsThirdScaleColor() {
+        return mStyles.verticalLabelsThirdScaleColor;
+    }
+
+    public void setVerticalLabelsThirdScaleColor(int verticalLabelsThirdScaleColor) {
+        mStyles.verticalLabelsThirdScaleColor = verticalLabelsThirdScaleColor;
+    }
+
+    public int getVerticalLabelsFourthScaleColor() {
+        return mStyles.verticalLabelsFourthScaleColor;
+    }
+
+    public void setVerticalLabelsFourthScaleColor(int verticalLabelsFourthScaleColor) {
+        mStyles.verticalLabelsFourthScaleColor = verticalLabelsFourthScaleColor;
+    }
+
     /**
      * @return  the width of the vertical labels
      *          of the second scale
      */
     public int getLabelVerticalSecondScaleWidth() {
         return mLabelVerticalSecondScaleWidth==null?0:mLabelVerticalSecondScaleWidth;
+    }
+
+    public int getLabelVerticalThirdScaleWidth() {
+        return mLabelVerticalThirdScaleWidth==null?0:mLabelVerticalThirdScaleWidth;
+    }
+
+    public int getLabelVerticalFourthScaleWidth() {
+        return mLabelVerticalFourthScaleWidth==null?0:mLabelVerticalThirdScaleWidth;
     }
 
     /**

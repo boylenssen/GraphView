@@ -154,6 +154,12 @@ public class LegendRenderer {
         if (mGraphView.mSecondScale != null) {
             allSeries.addAll(mGraphView.getSecondScale().getSeries());
         }
+        if (mGraphView.mThirdScale != null) {
+            allSeries.addAll(mGraphView.getThirdScale().getSeries());
+        }
+        if (mGraphView.mFourthScale != null) {
+            allSeries.addAll(mGraphView.getFourthScale().getSeries());
+        }
         return allSeries;
     }
 

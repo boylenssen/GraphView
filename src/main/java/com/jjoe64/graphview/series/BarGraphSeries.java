@@ -18,10 +18,9 @@ package com.jjoe64.graphview.series;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.RectF;
-import androidx.core.view.ViewCompat;
-import android.util.Log;
 import android.view.animation.AccelerateInterpolator;
+
+import androidx.core.view.ViewCompat;
 
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.RectD;
@@ -149,10 +148,10 @@ public class BarGraphSeries<E extends DataPointInterface> extends BaseSeries<E> 
      *
      * @param graphView corresponding graphview
      * @param canvas canvas
-     * @param isSecondScale whether we are plotting the second scale or not
+     * @param scaleIndex index of concerning scale
      */
     @Override
-    public void draw(GraphView graphView, Canvas canvas, boolean isSecondScale) {
+    public void draw(GraphView graphView, Canvas canvas, int scaleIndex) {
         mPaint.setTextAlign(Paint.Align.CENTER);
         if (mValuesOnTopSize == 0) {
             mValuesOnTopSize = graphView.getGridLabelRenderer().getTextSize();
@@ -167,12 +166,25 @@ public class BarGraphSeries<E extends DataPointInterface> extends BaseSeries<E> 
 
         double maxY;
         double minY;
-        if (isSecondScale) {
-            maxY = graphView.getSecondScale().getMaxY(false);
-            minY = graphView.getSecondScale().getMinY(false);
-        } else {
-            maxY = graphView.getViewport().getMaxY(false);
-            minY = graphView.getViewport().getMinY(false);
+        switch (scaleIndex) {
+            case 1:
+                maxY = graphView.getViewport().getMaxY(false);
+                minY = graphView.getViewport().getMinY(false);
+                break;
+            case 2:
+                maxY = graphView.getSecondScale().getMaxY(false);
+                minY = graphView.getSecondScale().getMinY(false);
+                break;
+            case 3:
+                maxY = graphView.getThirdScale().getMaxY(false);
+                minY = graphView.getThirdScale().getMinY(false);
+                break;
+            case 4:
+                maxY = graphView.getFourthScale().getMaxY(false);
+                minY = graphView.getFourthScale().getMinY(false);
+                break;
+            default:
+                throw new IllegalStateException("scale not available");
         }
 
         // Iterate through all bar graph series

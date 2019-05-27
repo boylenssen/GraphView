@@ -141,6 +141,10 @@ public class GraphView extends View {
      */
     protected SecondScale mSecondScale;
 
+    protected SecondScale mThirdScale;
+
+    protected SecondScale mFourthScale;
+
     /**
      * tap detector
      */
@@ -306,11 +310,23 @@ public class GraphView extends View {
         mViewport.drawFirst(canvas);
         mGridLabelRenderer.draw(canvas);
         for (Series s : mSeries) {
-            s.draw(this, canvas, false);
+            s.draw(this, canvas, 1);
         }
         if (mSecondScale != null) {
             for (Series s : mSecondScale.getSeries()) {
-                s.draw(this, canvas, true);
+                s.draw(this, canvas, 2);
+            }
+        }
+
+        if (mThirdScale != null) {
+            for (Series s : mThirdScale.getSeries()) {
+                s.draw(this, canvas, 3);
+            }
+        }
+
+        if (mFourthScale != null) {
+            for (Series s : mFourthScale.getSeries()) {
+                s.draw(this, canvas, 4);
             }
         }
 
@@ -434,6 +450,14 @@ public class GraphView extends View {
             graphwidth -= getGridLabelRenderer().getLabelVerticalSecondScaleWidth();
             graphwidth -= mSecondScale.getVerticalAxisTitleTextSize();
         }
+        if (mThirdScale != null) {
+            graphwidth -= getGridLabelRenderer().getLabelVerticalThirdScaleWidth();
+            graphwidth -= mThirdScale.getVerticalAxisTitleTextSize();
+        }
+        if (mFourthScale != null) {
+            graphwidth -= getGridLabelRenderer().getLabelVerticalFourthScaleWidth();
+            graphwidth -= mFourthScale.getVerticalAxisTitleTextSize();
+        }
         return graphwidth;
     }
 
@@ -555,6 +579,24 @@ public class GraphView extends View {
             mSecondScale.setVerticalAxisTitleTextSize(mGridLabelRenderer.mStyles.textSize);
         }
         return mSecondScale;
+    }
+
+    public SecondScale getThirdScale() {
+        if (mThirdScale == null) {
+            // this creates the third scale
+            mThirdScale = new SecondScale(this);
+            mThirdScale.setVerticalAxisTitleTextSize(mGridLabelRenderer.mStyles.textSize);
+        }
+        return mThirdScale;
+    }
+
+    public SecondScale getFourthScale() {
+        if (mFourthScale == null) {
+            // this creates the third scale
+            mFourthScale = new SecondScale(this);
+            mFourthScale.setVerticalAxisTitleTextSize(mGridLabelRenderer.mStyles.textSize);
+        }
+        return mFourthScale;
     }
 
     /**

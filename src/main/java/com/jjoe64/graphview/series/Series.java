@@ -77,9 +77,9 @@ public interface Series<E extends DataPointInterface> {
      *
      * @param graphView corresponding graphview
      * @param canvas canvas to draw on
-     * @param isSecondScale true if the drawing is for the second scale
+     * @param scaleIndex index of the scale from 1 to 4
      */
-    public void draw(GraphView graphView, Canvas canvas, boolean isSecondScale);
+    public void draw(GraphView graphView, Canvas canvas, int scaleIndex);
 
     /**
      * @return the title of the series. Used in the legend
