@@ -21,9 +21,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.view.animation.AccelerateInterpolator;
-
 import androidx.core.view.ViewCompat;
-
 import com.jjoe64.graphview.GraphView;
 
 import java.util.Iterator;
@@ -36,6 +34,7 @@ import java.util.Iterator;
  */
 public class LineGraphSeries<E extends DataPointInterface> extends BaseSeries<E> {
     private static final long ANIMATION_DURATION = 333;
+    private boolean drawLine = true;
 
     /**
      * wrapped styles regarding the line
@@ -186,6 +185,10 @@ public class LineGraphSeries<E extends DataPointInterface> extends BaseSeries<E>
         mAnimationInterpolator = new AccelerateInterpolator(2f);
     }
 
+    public void setLineVisible(boolean drawLine) {
+        this.drawLine = drawLine;
+    }
+
     /**
      * plots the series
      * draws the line and the background
@@ -196,6 +199,10 @@ public class LineGraphSeries<E extends DataPointInterface> extends BaseSeries<E>
      */
     @Override
     public void draw(GraphView graphView, Canvas canvas, int scaleIndex) {
+        if (!drawLine) {
+            return;
+        }
+
         resetDataPoints();
 
         // get data
