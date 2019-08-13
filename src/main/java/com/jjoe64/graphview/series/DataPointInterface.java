@@ -16,6 +16,8 @@
  */
 package com.jjoe64.graphview.series;
 
+import androidx.annotation.ColorInt;
+
 /**
  * interface of data points. Implement this in order
  * to use your class in {@link com.jjoe64.graphview.series.Series}.
@@ -35,4 +37,7 @@ public interface DataPointInterface {
      * @return the y value
      */
     public double getY();
+
+    @ColorInt Integer getColor();
+    void setColor(@ColorInt int color);
 }

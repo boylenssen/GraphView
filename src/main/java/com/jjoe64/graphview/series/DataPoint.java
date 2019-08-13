@@ -16,7 +16,7 @@
  */
 package com.jjoe64.graphview.series;
 
-import android.provider.ContactsContract;
+import androidx.annotation.ColorInt;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -32,6 +32,7 @@ public class DataPoint implements DataPointInterface, Serializable {
 
     private double x;
     private double y;
+    private @ColorInt Integer color = null;
 
     public DataPoint(double x, double y) {
         this.x=x;
@@ -41,6 +42,22 @@ public class DataPoint implements DataPointInterface, Serializable {
     public DataPoint(Date x, double y) {
         this.x = x.getTime();
         this.y = y;
+    }
+
+    public DataPoint(Date x, double y, @ColorInt int color) {
+        this.x = x.getTime();
+        this.y = y;
+        this.color = color;
+    }
+
+    @Override
+    public Integer getColor() {
+        return color;
+    }
+
+    @Override
+    public void setColor(@ColorInt int color) {
+        this.color = color;
     }
 
     @Override

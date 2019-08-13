@@ -280,8 +280,14 @@ public class LineGraphSeries<E extends DataPointInterface> extends BaseSeries<E>
         float minYOnSameX = 0f;
         float maxYOnSameX = 0f;
 
+        Paint painter = paint;
+        Paint noLinePainter = new Paint();
+        noLinePainter.setColor(0x00000000);
+
         while (values.hasNext()) {
             E value = values.next();
+
+            paint = value.getColor() != null ? noLinePainter : painter;
 
             double valY = value.getY() - minY;
             double ratY = valY / diffY;
