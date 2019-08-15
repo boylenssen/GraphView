@@ -18,18 +18,10 @@ package com.jjoe64.graphview.series;
 
 import android.graphics.Canvas;
 import android.graphics.PointF;
-import android.util.Log;
-
 import com.jjoe64.graphview.GraphView;
 
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Basis implementation for series.
@@ -49,7 +41,7 @@ public abstract class BaseSeries<E extends DataPointInterface> implements Series
     /**
      * holds the data
      */
-    final private List<E> mData = new ArrayList<E>();
+    final protected List<E> mData = new ArrayList<E>();
 
     /**
      * stores the used coordinates to find the

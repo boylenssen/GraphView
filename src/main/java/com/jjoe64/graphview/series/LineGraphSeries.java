@@ -24,8 +24,6 @@ import android.view.animation.AccelerateInterpolator;
 import androidx.core.view.ViewCompat;
 import com.jjoe64.graphview.GraphView;
 
-import java.util.Iterator;
-
 /**
  * Series to plot the data as line.
  * The line can be styled with many options.
@@ -232,8 +230,6 @@ public class LineGraphSeries<E extends DataPointInterface> extends BaseSeries<E>
                 throw new IllegalStateException("scale not available");
         }
 
-        Iterator<E> values = getValues(minX, maxX);
-
         // draw background
         double lastEndY = 0;
         double lastEndX = 0;
@@ -284,12 +280,12 @@ public class LineGraphSeries<E extends DataPointInterface> extends BaseSeries<E>
         Paint noLinePainter = new Paint();
         noLinePainter.setColor(0x00000000);
 
-        while (values.hasNext()) {
-            E value = values.next();
+        for (int valueIndex = 0; valueIndex < mData.size(); valueIndex++){
+            E value = mData.get(valueIndex);
 
             paint = value.getColor() != null ? noLinePainter : painter;
 
-            double valY = value.getY() - minY;
+            double valY = value.getColor() != null && valueIndex < (mData.size() - 1) ? mData.get(valueIndex+1).getY() : value.getY() - minY;
             double ratY = valY / diffY;
             double y = graphHeight * ratY;
 
