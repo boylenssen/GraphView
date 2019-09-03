@@ -1552,10 +1552,6 @@ public class GridLabelRenderer {
                     }
                 } else {
                     mPaintLabel.setTextAlign(Paint.Align.CENTER);
-                    if (i == mStepsHorizontal.size() - 1)
-                        mPaintLabel.setTextAlign(Paint.Align.RIGHT);
-                    if (i == 0)
-                        mPaintLabel.setTextAlign(Paint.Align.LEFT);
                 }
 
                 // multiline labels
