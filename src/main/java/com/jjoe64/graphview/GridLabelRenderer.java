@@ -23,6 +23,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.util.TypedValue;
 
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -33,6 +34,8 @@ import java.util.Map;
  * @author jjoe64
  */
 public class GridLabelRenderer {
+
+    public int fixedStep;
 
     /**
      * Hoziontal label alignment
@@ -1126,16 +1129,20 @@ public class GridLabelRenderer {
         double newMinX;
         double exactSteps;
 
-        // split range into equal steps
-        exactSteps = (maxX - minX) / (numHorizontalLabels - 1);
+        if (fixedStep > 0) {
+            exactSteps = fixedStep;
+        } else {
+            // split range into equal steps
+            exactSteps = (maxX - minX) / (numHorizontalLabels - 1);
 
-        // round because of floating error
-        exactSteps = Math.round(exactSteps * 1000000d) / 1000000d;
+            // round because of floating error
+            exactSteps = Math.round(exactSteps * 1000000d) / 1000000d;
 
-        // smallest viewport
-        if (exactSteps == 0d) {
-            exactSteps = 0.0000001d;
-            maxX = minX + exactSteps * (numHorizontalLabels - 1);
+            // smallest viewport
+            if (exactSteps == 0d) {
+                exactSteps = 0.0000001d;
+                maxX = minX + exactSteps * (numHorizontalLabels - 1);
+            }
         }
 
         // human rounding to have nice numbers (1, 2, 5, ...)
@@ -1200,6 +1207,16 @@ public class GridLabelRenderer {
         // must be down-rounded
         double count = Math.floor((minX-newMinX)/exactSteps);
         newMinX = count*exactSteps + newMinX;
+        
+        if (fixedStep > 0) {
+            // round the stepsizes on the x-axis
+
+            Date d = new Date((long) newMinX);
+            
+            int stepSizeInMinutes = fixedStep / 60000;
+            d.setMinutes(d.getMinutes() + (stepSizeInMinutes - d.getMinutes() % stepSizeInMinutes));
+            newMinX = d.getTime();
+        }
 
         // now we have our labels bounds
         if (changeBounds) {
@@ -1224,6 +1241,10 @@ public class GridLabelRenderer {
         for (int i = 0; i < numHorizontalLabels; i++) {
             // dont draw if it is left of visible screen
             if (newMinX + (i * exactSteps) < mGraphView.getViewport().mCurrentViewport.left) {
+                continue;
+            }
+
+            if (newMinX + (i * exactSteps) > mGraphView.getViewport().mCurrentViewport.right) {
                 continue;
             }
 
